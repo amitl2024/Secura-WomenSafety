@@ -177,7 +177,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 If you have any questions or need help:
 
-- 📧 Email: support@aiwomensafety.com
+- 📧 Email: nexus.appsin@gmail.com
 - 🐛 Issues: [GitHub Issues](https://github.com/yourusername/ai_women_safety/issues)
 - 📖 Documentation: [Wiki](https://github.com/yourusername/ai_women_safety/wiki)
 
