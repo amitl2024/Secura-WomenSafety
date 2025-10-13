@@ -37,7 +37,7 @@ A comprehensive Flutter application designed to provide safety, support, and pea
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/ai_women_safety.git
+   git clone https://github.com/yourgithubusername/ai_women_safety.git
    cd ai_women_safety
    ```
 
