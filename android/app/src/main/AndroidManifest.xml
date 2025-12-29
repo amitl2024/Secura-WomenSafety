@@ -14,7 +14,7 @@
 
 
     <application
-        android:label="ai_women_safety"
+        android:label="Secura"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 

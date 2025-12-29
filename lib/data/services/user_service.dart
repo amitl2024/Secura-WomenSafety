@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/user_model.dart';
+import 'package:ai_women_safety/utils/logger_util.dart';
 
 class UserService {
   static final UserService _instance = UserService._internal();
@@ -29,8 +30,8 @@ class UserService {
         return UserModel.fromJson(doc.data()!, doc.id);
       }
       return null;
-    } catch (e) {
-      print('Error getting user: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error getting user', e, stackTrace);
       return null;
     }
   }

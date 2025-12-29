@@ -5,6 +5,7 @@ import 'package:ai_women_safety/data/services/sms_service.dart'; // Import top-l
 import 'package:ai_women_safety/data/services/admin_panel_service.dart';
 import 'package:ai_women_safety/data/models/emergency_contact.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:ai_women_safety/utils/logger_util.dart';
 
 class SafetyTimerService {
   static final SafetyTimerService _instance = SafetyTimerService._internal();
@@ -50,7 +51,7 @@ class SafetyTimerService {
     _remainingSeconds = minutes * 60;
     _isTimerRunning = true;
 
-    print('⏱️ Safety timer started for $minutes minutes');
+    AppLogger.info('⏱️ Safety timer started for $minutes minutes');
 
     // Notify listeners about the timer start
     if (onTimerUpdate != null) {
@@ -69,7 +70,7 @@ class SafetyTimerService {
         // Timer completed
         timer.cancel();
         _isTimerRunning = false;
-        print('⏱️ Safety timer completed - sending emergency alert!');
+        AppLogger.warning('⏱️ Safety timer completed - sending emergency alert!');
 
         // Send emergency alert automatically
         _sendEmergencyAlert();
@@ -87,7 +88,7 @@ class SafetyTimerService {
     if (_isTimerRunning && _timer != null) {
       _timer?.cancel();
       _isTimerRunning = false;
-      print('⏱️ Safety timer stopped');
+      AppLogger.info('⏱️ Safety timer stopped');
 
       // Notify listeners about the timer stop
       if (onTimerStopped != null) {
@@ -99,12 +100,12 @@ class SafetyTimerService {
   // Send emergency alert when timer completes
   Future<void> _sendEmergencyAlert() async {
     try {
-      print('🚨 Automatically sending emergency alert from safety timer...');
+      AppLogger.warning('🚨 Automatically sending emergency alert from safety timer...');
 
       // Check SMS permissions first
       bool hasSmsPermission = await checkSmsPermissions();
       if (!hasSmsPermission) {
-        print('❌ SMS permission required for emergency alert.');
+        AppLogger.error('❌ SMS permission required for emergency alert.');
         return;
       }
 
@@ -114,7 +115,7 @@ class SafetyTimerService {
         // Try to refresh location once more
         position = await LocationService.refreshLocation();
         if (position == null) {
-          print('❌ Could not get location for emergency alert');
+          AppLogger.error('❌ Could not get location for emergency alert');
           return;
         }
       }
@@ -133,7 +134,7 @@ class SafetyTimerService {
 
       // Verify location data is valid
       if (position.latitude == 0.0 && position.longitude == 0.0) {
-        print("❌ Invalid location data received. Cannot send alert.");
+        AppLogger.error("❌ Invalid location data received. Cannot send alert.");
         return;
       }
 
@@ -146,14 +147,14 @@ class SafetyTimerService {
           additionalInfo:
               "Emergency alert from safety timer - ${_userName.isNotEmpty ? _userName : "User"}",
         );
-        print("✅ Alert sent to admin panel successfully");
-      } catch (e) {
-        print("❌ Failed to send alert to admin panel: $e");
+        AppLogger.info("✅ Alert sent to admin panel successfully");
+      } catch (e, stackTrace) {
+        AppLogger.error("❌ Failed to send alert to admin panel", e, stackTrace);
       }
 
       // Fetch emergency contacts from Firestore
       List<EmergencyContact> contacts =
-          await EmergencyContactService.getEmergencyContacts().first;
+          await EmergencyContactService.getEmergencyContactsOnce();
 
       // Send SMS to each contact using the emergency alert SMS service
       if (contacts.isNotEmpty) {
@@ -170,21 +171,21 @@ class SafetyTimerService {
                 googleMapsUrl,
               );
               successCount++;
-            } catch (e) {
-              print('Failed to send SMS to ${contact.name}: $e');
+            } catch (e, stackTrace) {
+              AppLogger.error('Failed to send SMS to ${contact.name}', e, stackTrace);
               // Continue with other contacts even if one fails
             }
           }
         }
 
-        print(
+        AppLogger.info(
           "✅ Emergency alert sent to $successCount out of $totalContacts contacts!",
         );
       } else {
-        print("❌ No emergency contacts found for safety timer alert");
+        AppLogger.warning("❌ No emergency contacts found for safety timer alert");
       }
-    } catch (e) {
-      print("❌ Error sending emergency alert from safety timer: $e");
+    } catch (e, stackTrace) {
+      AppLogger.error("❌ Error sending emergency alert from safety timer", e, stackTrace);
     }
   }
 

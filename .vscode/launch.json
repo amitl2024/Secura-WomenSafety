@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "women_safety (User App)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main.dart"
+        },
+        {
+            "name": "Police Admin Web (Chrome)",
+            "request": "launch",
+            "type": "dart",
+            "program": "lib/main_admin.dart",
+            "args": ["-d", "chrome"]
+        }
+    ]
+}

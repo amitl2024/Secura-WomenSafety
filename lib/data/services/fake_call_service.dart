@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:telephony/telephony.dart';
 import 'package:ai_women_safety/data/services/ringtone_service.dart';
+import 'package:ai_women_safety/utils/logger_util.dart';
 
 class FakeCallService {
   static final FakeCallService _instance = FakeCallService._internal();
@@ -48,7 +49,7 @@ class FakeCallService {
     String? callerAvatar,
   }) async {
     if (_isFakeCallActive) {
-      print('Fake call already active');
+      AppLogger.debug('Fake call already active');
       return;
     }
 
@@ -73,7 +74,7 @@ class FakeCallService {
       }
     });
 
-    print(
+    AppLogger.info(
       'Fake call started with caller: $_fakeCallerName ($_fakeCallerNumber)',
     );
   }
@@ -84,7 +85,7 @@ class FakeCallService {
 
     _callTimer?.cancel();
     _ringtoneService.stopRingtone();
-    print('Fake call answered');
+    AppLogger.info('Fake call answered');
 
     // You can add additional logic here for when call is answered
     // For example, start a timer for call duration
@@ -97,7 +98,7 @@ class FakeCallService {
     _isFakeCallActive = false;
     _callTimer?.cancel();
     _ringtoneService.stopRingtone();
-    print('Fake call ended');
+    AppLogger.info('Fake call ended');
   }
 
   // Decline the fake call
@@ -107,7 +108,7 @@ class FakeCallService {
     _isFakeCallActive = false;
     _callTimer?.cancel();
     _ringtoneService.stopRingtone();
-    print('Fake call declined');
+    AppLogger.info('Fake call declined');
   }
 
   // Check if device can make calls (for real emergency calls)
@@ -116,8 +117,8 @@ class FakeCallService {
       // For now, assume device can make calls if telephony is available
       // You can add more sophisticated checks here
       return true;
-    } catch (e) {
-      print('Error checking phone capability: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error checking phone capability', e, stackTrace);
       return false;
     }
   }
@@ -126,8 +127,8 @@ class FakeCallService {
   Future<void> makeRealCall(String phoneNumber) async {
     try {
       await _telephony.dialPhoneNumber(phoneNumber);
-    } catch (e) {
-      print('Error making real call: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error making real call', e, stackTrace);
       rethrow;
     }
   }
@@ -136,8 +137,8 @@ class FakeCallService {
   Future<void> openDialer(String phoneNumber) async {
     try {
       await _telephony.openDialer(phoneNumber);
-    } catch (e) {
-      print('Error opening dialer: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error opening dialer', e, stackTrace);
       rethrow;
     }
   }
@@ -147,21 +148,21 @@ class FakeCallService {
     try {
       final bool? granted = await _telephony.requestPhonePermissions;
       return granted ?? false;
-    } catch (e) {
-      print('Error requesting phone permissions: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error requesting phone permissions', e, stackTrace);
       return false;
     }
   }
 
   // Test ringtone functionality
   Future<void> testRingtone() async {
-    print('🧪 Testing ringtone functionality...');
+    AppLogger.debug('🧪 Testing ringtone functionality...');
     await _ringtoneService.startRingtone();
 
     // Stop after 5 seconds for testing
     Timer(const Duration(seconds: 5), () {
       _ringtoneService.stopRingtone();
-      print('🧪 Ringtone test completed');
+      AppLogger.debug('🧪 Ringtone test completed');
     });
   }
 }

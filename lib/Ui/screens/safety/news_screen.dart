@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../data/services/news_service.dart';
 import '../../../data/models/news_models.dart';
+import 'package:ai_women_safety/utils/logger_util.dart';
 
 class NewsScreen extends StatefulWidget {
   const NewsScreen({super.key});
@@ -50,7 +51,7 @@ class _NewsScreenState extends State<NewsScreen> with TickerProviderStateMixin {
         _errorMessage = '';
       });
 
-      print('📰 Loading news...');
+      AppLogger.debug('📰 Loading news...');
 
       // Load safety news and top headlines
       final safetyNews = await NewsService.getSafetyNews();
@@ -62,11 +63,11 @@ class _NewsScreenState extends State<NewsScreen> with TickerProviderStateMixin {
         _isLoading = false;
       });
 
-      print(
+      AppLogger.info(
         '✅ Loaded ${safetyNews.length} safety news and ${topHeadlines.length} headlines',
       );
-    } catch (e) {
-      print('❌ Error loading news: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ Error loading news', e, stackTrace);
       setState(() {
         _isLoading = false;
         _errorMessage = 'Error loading news: ${e.toString()}';

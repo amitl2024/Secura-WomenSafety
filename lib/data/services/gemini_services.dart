@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:ai_women_safety/data/services/emotional_support_service.dart';
+import 'package:ai_women_safety/utils/logger_util.dart';
 
 class GeminiService {
   final String? apiKey = dotenv.env['GEMINI_API_KEY'];
@@ -18,7 +20,6 @@ class GeminiService {
     final url = Uri.parse(
       "https://generativelanguage.googleapis.com/v1/models/$model:generateContent?key=$apiKey",
     );
-    print(url);
     // Analyze emotional context
     final emotionalContext = _emotionalService.analyzeEmotionalContext(message);
 
@@ -29,42 +30,49 @@ class GeminiService {
 
     // Use the refined prompt with emotional context
     final prompt = _refinedCalmPrompt(message, emotionalContext);
-    print("📝 Prompt length: ${prompt.length} characters");
+    AppLogger.debug("📝 Prompt length: ${prompt.length} characters");
 
     try {
-      print("🚀 Sending request to Gemini API...");
-      print("📝 Message: $message");
-      print("🌐 URL: $url");
+      AppLogger.debug("🚀 Sending request to Gemini API...");
+      AppLogger.verbose("📝 Message: $message");
 
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "contents": [
-            {
-              "role": "user",
-              "parts": [
-                {"text": prompt},
+      final response = await http
+          .post(
+            url,
+            headers: {"Content-Type": "application/json"},
+            body: jsonEncode({
+              "contents": [
+                {
+                  "role": "user",
+                  "parts": [
+                    {"text": prompt},
+                  ],
+                },
               ],
+              "generationConfig": {
+                "temperature":
+                    0.9, // Higher for more creative and empathetic responses
+                "topP": 0.95,
+                "topK": 40,
+                "maxOutputTokens": 200,
+                "candidateCount": 1,
+                "stopSequences": [],
+              },
+            }),
+          )
+          .timeout(
+            const Duration(seconds: 30),
+            onTimeout: () {
+              AppLogger.error("Gemini API request timeout");
+              throw TimeoutException('Request timeout');
             },
-          ],
-          "generationConfig": {
-            "temperature":
-                0.9, // Higher for more creative and empathetic responses
-            "topP": 0.95,
-            "topK": 40,
-            "maxOutputTokens": 200,
-            "candidateCount": 1,
-            "stopSequences": [],
-          },
-        }),
-      );
+          );
 
-      print("📡 Response Status: ${response.statusCode}");
+      AppLogger.debug("📡 Response Status: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print("API Response: $data"); // Debug to see response structure
+        AppLogger.verbose("API Response received successfully");
 
         // Try multiple ways to extract the response
         String? botReply;
@@ -76,7 +84,9 @@ class GeminiService {
           // Check for various finish reasons
           final finishReason = candidate["finishReason"];
           if (finishReason != null) {
-            print("⚠️ Response finished with reason: $finishReason");
+            AppLogger.warning(
+              "⚠️ Response finished with reason: $finishReason",
+            );
             switch (finishReason) {
               case "MAX_TOKENS":
                 return "I'm here to help, sweetheart! Could you please ask a shorter question so I can give you a complete response? 💜";
@@ -87,7 +97,7 @@ class GeminiService {
               case "OTHER":
                 return "I'm having trouble processing that request. Could you please try rephrasing your question? 💜";
               default:
-                print("⚠️ Unknown finish reason: $finishReason");
+                AppLogger.warning("⚠️ Unknown finish reason: $finishReason");
             }
           }
 
@@ -128,23 +138,24 @@ class GeminiService {
         }
 
         if (botReply != null && botReply.isNotEmpty) {
-          print("✅ Successfully extracted response: $botReply");
+          AppLogger.debug("✅ Successfully extracted response");
           return botReply;
         } else {
-          print("❌ No valid response found. Full response: $data");
-          print(
-            "❌ Candidate content structure: ${data["candidates"]?[0]?["content"]}",
+          AppLogger.error(
+            "❌ No valid response found",
+            "Candidate content structure: ${data["candidates"]?[0]?["content"]}",
           );
           return "I'm having trouble processing that right now. Could you please try rephrasing your question? 💜";
         }
       } else {
-        print("Gemini API Error - Status: ${response.statusCode}");
-        print("Error Response: ${response.body}");
+        AppLogger.error(
+          "Gemini API Error - Status: ${response.statusCode}",
+          response.body,
+        );
         return "I'm experiencing some technical difficulties. Please try again in a moment. 💜";
       }
-    } catch (e) {
-      print("💥 Exception calling Gemini API: $e");
-      print("💥 Exception type: ${e.runtimeType}");
+    } catch (e, stackTrace) {
+      AppLogger.error("💥 Exception calling Gemini API", e, stackTrace);
       return "I'm having some technical difficulties right now. Please try again in a moment, sweetheart. 💜";
     }
   }

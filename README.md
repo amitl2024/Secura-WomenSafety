@@ -37,7 +37,7 @@ A comprehensive Flutter application designed to provide safety, support, and pea
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourgithubusername/ai_women_safety.git
+   git clone https://github.com/amitl2024/ai_women_safety.git
    cd ai_women_safety
    ```
 
@@ -51,11 +51,17 @@ A comprehensive Flutter application designed to provide safety, support, and pea
    - Update Firebase configuration in `lib/main.dart`
 
 4. **Set up environment variables**
-   - Create `.env` file in the root directory
-   - Add your Gemini API key:
-     ```
-     GEMINI_API_KEY=your_gemini_api_key_here
-     ```
+   - Create `.env` file in the `assets/` directory
+- Add your API keys:
+    ```
+    GEMINI_API_KEY=your_gemini_api_key_here
+    SUPABASE_URL=your_supabase_url
+    SUPABASE_ANON_KEY=your_supabase_anon_key
+    NEWS_API_KEY=your_news_api_key (optional)
+    ```
+   - **Note**: The Police/Admin panel is a separate web application — admin credentials are managed there (see `main_admin.dart` / admin web README).
+   - **Important**: Never commit the `.env` file to version control
+   - For production, use secure environment variable management
 
 5. **Run the app**
    ```bash
@@ -89,9 +95,10 @@ lib/
 
 ### Firebase Setup
 1. Create a Firebase project
-2. Enable Authentication, Firestore, and Cloud Functions
+2. Enable Authentication, Firestore, Cloud Functions, and **Crashlytics**
 3. Download `google-services.json` and place in `android/app/`
 4. Configure authentication providers (Email/Password, Google Sign-In)
+5. Enable Crashlytics in Firebase Console (for crash reporting)
 
 ### API Keys
 - **Gemini AI**: Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)

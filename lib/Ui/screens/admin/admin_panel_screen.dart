@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:ai_women_safety/data/services/admin_panel_service.dart';
 import 'package:ai_women_safety/data/services/admin_auth_service.dart';
-import 'package:ai_women_safety/Ui/screens/auth/login_screen.dart';
+
 import 'package:url_launcher/url_launcher.dart';
 import 'package:ai_women_safety/data/services/report_service.dart';
 import 'package:ai_women_safety/data/models/report_model.dart';
@@ -10,6 +10,7 @@ import 'package:intl/intl.dart';
 import 'package:ai_women_safety/data/models/user_model.dart';
 import 'package:ai_women_safety/data/services/user_service.dart';
 import 'package:ai_women_safety/Ui/screens/admin/user_details_screen.dart';
+import 'package:ai_women_safety/utils/logger_util.dart';
 
 class AdminPanelScreen extends StatefulWidget {
   const AdminPanelScreen({super.key});
@@ -109,10 +110,7 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
   Future<void> _logout() async {
     await AdminAuthService.logout();
     if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginScreen()),
-      );
+      Navigator.pushReplacementNamed(context, '/login');
     }
   }
 
@@ -650,8 +648,14 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
                             );
                           },
                           errorBuilder: (context, error, stackTrace) {
-                            print('Error loading image: $error');
-                            print('Image URL: ${report.imageUrls[imgIndex]}');
+                            AppLogger.error(
+                              'Error loading image',
+                              error,
+                              stackTrace,
+                            );
+                            AppLogger.debug(
+                              'Image URL: ${report.imageUrls[imgIndex]}',
+                            );
                             return Container(
                               width: 120,
                               height: 120,
@@ -1188,8 +1192,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
       if (userDoc.exists && userDoc.data() != null) {
         return userDoc.data()!['phone'] as String?;
       }
-    } catch (e) {
-      print('Error fetching user phone number: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error fetching user phone number', e, stackTrace);
     }
     return null;
   }
@@ -1244,8 +1248,8 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
           );
         }
       }
-    } catch (e) {
-      print('Error deleting report: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error deleting report', e, stackTrace);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Failed to delete report')),

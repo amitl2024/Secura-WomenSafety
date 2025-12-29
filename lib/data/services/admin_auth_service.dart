@@ -1,6 +1,32 @@
+import 'package:ai_women_safety/utils/logger_util.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class AdminAuthService {
-  static const String _adminEmail = 'admin@gmail.com';
-  static const String _adminPassword = 'admin123';
+  // Get admin credentials from environment variables
+  // Fallback to default values only in development (not recommended for production)
+  static String get _adminEmail {
+    final email = dotenv.env['ADMIN_EMAIL'];
+    if (email != null && email.isNotEmpty) {
+      return email;
+    }
+    // Fallback for development - should be removed in production
+    AppLogger.warning(
+      'ADMIN_EMAIL not found in .env, using default (development only)',
+    );
+    return 'admin@gmail.com';
+  }
+
+  static String get _adminPassword {
+    final password = dotenv.env['ADMIN_PASSWORD'];
+    if (password != null && password.isNotEmpty) {
+      return password;
+    }
+    // Fallback for development - should be removed in production
+    AppLogger.warning(
+      'ADMIN_PASSWORD not found in .env, using default (development only)',
+    );
+    return 'admin123';
+  }
 
   // Static variables to maintain session (in-memory)
   static bool _isLoggedIn = false;
@@ -17,7 +43,7 @@ class AdminAuthService {
       // Store admin login state in memory
       _isLoggedIn = true;
       _loginTime = DateTime.now();
-      print("✅ Admin login successful - session saved");
+      AppLogger.info("✅ Admin login successful - session saved");
       return true;
     }
     return false;
@@ -25,7 +51,7 @@ class AdminAuthService {
 
   // Check if admin is logged in
   static Future<bool> isAdminLoggedIn() async {
-    print("Admin login status: $_isLoggedIn");
+    AppLogger.debug("Admin login status: $_isLoggedIn");
     return _isLoggedIn;
   }
 
@@ -34,9 +60,9 @@ class AdminAuthService {
     try {
       _isLoggedIn = false;
       _loginTime = null;
-      print("✅ Admin logout successful - session cleared");
-    } catch (e) {
-      print("Error during admin logout: $e");
+      AppLogger.info("✅ Admin logout successful - session cleared");
+    } catch (e, stackTrace) {
+      AppLogger.error("Error during admin logout", e, stackTrace);
     }
   }
 

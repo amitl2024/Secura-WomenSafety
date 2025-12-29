@@ -1,54 +1,41 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:telephony/telephony.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:ai_women_safety/utils/logger_util.dart';
 
 final Telephony _telephony = Telephony.instance;
 
-Future<bool> _ensureSmsPermissions() async {
-  try {
-    // Check if device is SMS capable
-    final bool? hasSms = await _telephony.isSmsCapable;
-    print("Device is SMS capable: $hasSms");
-    if (hasSms != true) {
-      print("❌ Device is not SMS capable");
-      return false;
-    }
-
-    // Request SMS permissions directly through telephony plugin
-    print("Requesting SMS permission...");
-    final bool? granted = await _telephony.requestSmsPermissions;
-    print("SMS permission granted: $granted");
-
-    return granted ?? false;
-  } catch (e) {
-    print('Error checking SMS permissions: $e');
-    return false;
-  }
-}
-
 Future<bool> checkSmsPermissions() async {
   try {
-    // Check if device is SMS capable
+    // iOS doesn't require SMS permissions - Messages app handles it
+    if (Platform.isIOS) {
+      AppLogger.debug("iOS platform - SMS permissions not required");
+      return true;
+    }
+
+    // Android: Check if device is SMS capable
     final bool? hasSms = await _telephony.isSmsCapable;
-    print("Device is SMS capable: $hasSms");
+    AppLogger.debug("Device is SMS capable: $hasSms");
     if (hasSms != true) {
-      print("❌ Device is not SMS capable");
+      AppLogger.warning("❌ Device is not SMS capable");
       return false;
     }
 
     // Request SMS permissions directly through telephony plugin
-    print("Requesting SMS permission...");
+    AppLogger.debug("Requesting SMS permission...");
     final bool? granted = await _telephony.requestSmsPermissions;
-    print("SMS permission granted: $granted");
+    AppLogger.debug("SMS permission granted: $granted");
 
     return granted ?? false;
-  } catch (e) {
-    print('Error checking SMS permissions: $e');
+  } catch (e, stackTrace) {
+    AppLogger.error('Error checking SMS permissions', e, stackTrace);
     return false;
   }
 }
 
 Future<void> sendAddContactSMS(String contactNumber, String userName) async {
-  final ok = await _ensureSmsPermissions();
+  final ok = await checkSmsPermissions();
   if (!ok) {
     throw Exception('SMS permission not granted or device not SMS capable');
   }
@@ -58,10 +45,16 @@ Future<void> sendAddContactSMS(String contactNumber, String userName) async {
       "In case of emergency, you will receive alerts and my location.";
 
   try {
-    await _telephony.sendSms(to: contactNumber, message: body);
-    print('SMS sent successfully to $contactNumber');
-  } catch (e) {
-    print('Error sending SMS: $e');
+    if (Platform.isIOS) {
+      // iOS: Use url_launcher to open Messages app
+      await _sendSmsViaUrlLauncher(contactNumber, body);
+    } else {
+      // Android: Use telephony package
+      await _telephony.sendSms(to: contactNumber, message: body);
+    }
+    AppLogger.info('SMS sent successfully to $contactNumber');
+  } catch (e, stackTrace) {
+    AppLogger.error('Error sending SMS', e, stackTrace);
     rethrow;
   }
 }
@@ -72,23 +65,15 @@ Future<void> sendEmergencyAlertSMS(
   String locationString,
   String googleMapsUrl,
 ) async {
-  print("🔧 Starting sendEmergencyAlertSMS function...");
-  print("Contact: $contactNumber");
-  print("User: $userName");
+  AppLogger.info("🔧 Starting sendEmergencyAlertSMS function...");
+  AppLogger.debug("Contact: $contactNumber");
+  AppLogger.debug("Platform: ${Platform.isIOS ? 'iOS' : 'Android'}");
 
   try {
-    // Check if device is SMS capable
-    final bool? hasSms = await _telephony.isSmsCapable;
-    print("Device is SMS capable: $hasSms");
-    if (hasSms != true) {
-      throw Exception('Device is not SMS capable');
-    }
-
-    // Request SMS permissions
-    final bool? smsGranted = await _telephony.requestSmsPermissions;
-    print("SMS permission granted: $smsGranted");
-    if (smsGranted != true) {
-      throw Exception('SMS permission not granted');
+    // Check permissions
+    final bool hasPermission = await checkSmsPermissions();
+    if (!hasPermission) {
+      throw Exception('SMS permission not granted or device not SMS capable');
     }
 
     final String body =
@@ -101,39 +86,70 @@ Future<void> sendEmergencyAlertSMS(
         "Time: ${DateTime.now().toString()}";
 
     // Debug logging
-    print('📤 Sending emergency SMS to $contactNumber:');
-    print('SMS Body length: ${body.length} characters');
-    print(
-      'SMS Body preview: ${body.substring(0, body.length > 100 ? 100 : body.length)}...',
-    );
+    AppLogger.debug('📤 Sending emergency SMS to $contactNumber');
+    AppLogger.verbose('SMS Body length: ${body.length} characters');
 
-    // Try to send SMS with multipart support for long messages
-    bool isMultipart = body.length > 160;
-    print("Using multipart SMS: $isMultipart");
+    if (Platform.isIOS) {
+      // iOS: Use url_launcher to open Messages app
+      await _sendSmsViaUrlLauncher(contactNumber, body);
+      AppLogger.info('✅ Emergency SMS opened in Messages app on iOS');
+    } else {
+      // Android: Try direct SMS first, then fallback to default app
+      try {
+        // Try to send SMS with multipart support for long messages
+        bool isMultipart = body.length > 160;
+        AppLogger.debug("Using multipart SMS: $isMultipart");
 
-    print("📱 Calling _telephony.sendSms...");
-    await _telephony.sendSms(
-      to: contactNumber,
-      message: body,
-      isMultipart: isMultipart,
-    );
-    print('✅ Emergency SMS sent successfully to $contactNumber');
-  } catch (e) {
-    print('❌ Error sending emergency SMS: $e');
-    print('Error type: ${e.runtimeType}');
-
-    // Try alternative method using default SMS app
-    try {
-      print("🔄 Trying alternative SMS method...");
-      await _telephony.sendSmsByDefaultApp(
-        to: contactNumber,
-        message:
-            "🚨 EMERGENCY ALERT 🚨\nI need help! Please check my location: $googleMapsUrl",
-      );
-      print('✅ Emergency SMS sent via default app to $contactNumber');
-    } catch (e2) {
-      print('❌ Alternative SMS method also failed: $e2');
-      rethrow;
+        await _telephony.sendSms(
+          to: contactNumber,
+          message: body,
+          isMultipart: isMultipart,
+        );
+        AppLogger.info('✅ Emergency SMS sent successfully to $contactNumber');
+      } catch (e, stackTrace) {
+        AppLogger.warning('Direct SMS failed, trying default app...', e, stackTrace);
+        
+        // Fallback to default SMS app
+        await _telephony.sendSmsByDefaultApp(
+          to: contactNumber,
+          message:
+              "🚨 EMERGENCY ALERT 🚨\nI need help! Please check my location: $googleMapsUrl",
+        );
+        AppLogger.info('✅ Emergency SMS opened in default SMS app');
+      }
     }
+  } catch (e, stackTrace) {
+    AppLogger.error('❌ Error sending emergency SMS', e, stackTrace);
+    rethrow;
+  }
+}
+
+/// Helper function to send SMS via URL launcher (iOS and fallback for Android)
+Future<void> _sendSmsViaUrlLauncher(String phoneNumber, String message) async {
+  try {
+    // Clean phone number (remove non-digits except +)
+    String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    
+    // iOS uses sms: URL scheme
+    // Format: sms:+1234567890&body=message
+    final Uri smsUri = Uri(
+      scheme: 'sms',
+      path: cleanNumber,
+      queryParameters: {
+        'body': message,
+      },
+    );
+
+    AppLogger.debug('Opening SMS URL: sms:$cleanNumber');
+    
+    if (await canLaunchUrl(smsUri)) {
+      await launchUrl(smsUri, mode: LaunchMode.externalApplication);
+      AppLogger.info('✅ SMS app opened successfully');
+    } else {
+      throw Exception('Cannot launch SMS URL');
+    }
+  } catch (e, stackTrace) {
+    AppLogger.error('Error launching SMS via URL', e, stackTrace);
+    rethrow;
   }
 }

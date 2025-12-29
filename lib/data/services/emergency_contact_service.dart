@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/emergency_contact.dart';
+import 'package:ai_women_safety/utils/logger_util.dart';
 
 class EmergencyContactService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -12,7 +14,7 @@ class EmergencyContactService {
   // Get current user ID
   static String? get _currentUserId => _auth.currentUser?.uid;
 
-  // Get emergency contacts for current user
+  // Get emergency contacts for current user (as Stream for real-time updates)
   static Stream<List<EmergencyContact>> getEmergencyContacts() {
     if (_currentUserId == null) {
       return Stream.value([]);
@@ -32,6 +34,35 @@ class EmergencyContactService {
         return EmergencyContact.fromMap(data);
       }).toList();
     });
+  }
+
+  // Get emergency contacts as Future (for one-time fetch with timeout)
+  static Future<List<EmergencyContact>> getEmergencyContactsOnce({
+    Duration timeout = const Duration(seconds: 10),
+  }) async {
+    if (_currentUserId == null) {
+      return [];
+    }
+
+    try {
+      final snapshot = await _firestore
+          .collection(_collectionName)
+          .doc(_currentUserId)
+          .collection(_subCollectionName)
+          .orderBy('isPrimary', descending: true)
+          .orderBy('createdAt', descending: false)
+          .get()
+          .timeout(timeout);
+
+      return snapshot.docs.map((doc) {
+        final data = doc.data();
+        data['id'] = doc.id;
+        return EmergencyContact.fromMap(data);
+      }).toList();
+    } catch (e) {
+      AppLogger.error('Error fetching emergency contacts', e);
+      return [];
+    }
   }
 
   // Add new emergency contact

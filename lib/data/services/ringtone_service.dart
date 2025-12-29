@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/services.dart';
+import 'package:ai_women_safety/utils/logger_util.dart';
 
 class RingtoneService {
   static final RingtoneService _instance = RingtoneService._internal();
@@ -16,27 +17,27 @@ class RingtoneService {
   // Start ringtone and vibration
   Future<void> startRingtone() async {
     if (_isPlaying) {
-      print('Ringtone already playing');
+      AppLogger.debug('Ringtone already playing');
       return;
     }
 
-    print('Starting ringtone...');
+    AppLogger.debug('Starting ringtone...');
     _isPlaying = true;
 
     try {
       // Start vibration pattern
-      print('Starting vibration pattern...');
+      AppLogger.debug('Starting vibration pattern...');
       _startVibrationPattern();
 
       // Start sound pattern
-      print('Starting sound pattern...');
+      AppLogger.debug('Starting sound pattern...');
       await _startSoundPattern();
 
-      print('✅ Ringtone started successfully');
-    } catch (e) {
-      print('❌ Error starting ringtone: $e');
+      AppLogger.info('✅ Ringtone started successfully');
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ Error starting ringtone', e, stackTrace);
 
-      print('🔄 Falling back to haptic feedback...');
+      AppLogger.debug('🔄 Falling back to haptic feedback...');
       _startHapticPattern();
     }
   }
@@ -52,16 +53,16 @@ class RingtoneService {
       _vibrationTimer?.cancel();
       _soundTimer?.cancel();
 
-      print('Ringtone stopped');
-    } catch (e) {
-      print('Error stopping ringtone: $e');
+      AppLogger.debug('Ringtone stopped');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error stopping ringtone', e, stackTrace);
     }
   }
 
   // Start sound pattern with actual audio
   Future<void> _startSoundPattern() async {
     try {
-      print('🎵 Starting sound pattern...');
+      AppLogger.debug('🎵 Starting sound pattern...');
 
       // First try to play the ringtone from assets
       bool audioPlayed = await _tryPlayRingtone();
@@ -69,15 +70,15 @@ class RingtoneService {
       if (!audioPlayed) {
         // If audio file not available or failed to play, use system sounds
         if (Platform.isAndroid) {
-          print('📱 Android detected - using system sounds as fallback');
+          AppLogger.debug('📱 Android detected - using system sounds as fallback');
           await _playSystemSound();
         } else {
-          print('🍎 iOS detected - using haptic feedback as fallback');
+          AppLogger.debug('🍎 iOS detected - using haptic feedback as fallback');
           _startHapticPattern();
         }
       }
-    } catch (e) {
-      print('❌ Error playing audio: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ Error playing audio', e, stackTrace);
       _startHapticPattern();
     }
   }
@@ -85,7 +86,7 @@ class RingtoneService {
   // Try to play ringtone from assets
   Future<bool> _tryPlayRingtone() async {
     try {
-      print('🔊 Attempting to play ringtone.mp3 from assets...');
+      AppLogger.debug('🔊 Attempting to play ringtone.mp3 from assets...');
 
       // Set volume
       await _audioPlayer.setVolume(1.0);
@@ -96,14 +97,14 @@ class RingtoneService {
         mode: PlayerMode.lowLatency,
       );
 
-      print('✅ Ringtone started successfully');
+      AppLogger.debug('✅ Ringtone started successfully');
 
       // Set up looping
       await _audioPlayer.setReleaseMode(ReleaseMode.loop);
 
       return true;
-    } catch (e) {
-      print('❌ Failed to play ringtone: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ Failed to play ringtone', e, stackTrace);
       return false;
     }
   }
@@ -130,8 +131,8 @@ class RingtoneService {
           timer.cancel();
         }
       });
-    } catch (e) {
-      print('Error playing system sound: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error playing system sound', e, stackTrace);
       _startHapticPattern();
     }
   }
@@ -139,19 +140,19 @@ class RingtoneService {
   // Play beep sound using system sound
   Future<void> _playBeepSound() async {
     try {
-      print('🔊 Playing beep sound...');
+      AppLogger.verbose('🔊 Playing beep sound...');
       // Use system sound for beep
       SystemSound.play(SystemSoundType.alert);
 
       // Add a second beep after a short delay
       Future.delayed(const Duration(milliseconds: 300), () {
         if (_isPlaying) {
-          print('🔊 Playing second beep...');
+          AppLogger.verbose('🔊 Playing second beep...');
           SystemSound.play(SystemSoundType.alert);
         }
       });
-    } catch (e) {
-      print('❌ Error playing beep: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ Error playing beep', e, stackTrace);
     }
   }
 
@@ -188,7 +189,7 @@ class RingtoneService {
   // Vibrate with haptic feedback pattern
   Future<void> _vibrate() async {
     try {
-      print('📳 Using haptic feedback for vibration...');
+      AppLogger.verbose('📳 Using haptic feedback for vibration...');
 
       // Create a more realistic phone call vibration pattern
       if (_isPlaying) {
@@ -210,8 +211,8 @@ class RingtoneService {
           if (_isPlaying) HapticFeedback.mediumImpact();
         });
       }
-    } catch (e) {
-      print('❌ Error with haptic feedback: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ Error with haptic feedback', e, stackTrace);
       // Fallback to light haptic feedback
       HapticFeedback.lightImpact();
     }

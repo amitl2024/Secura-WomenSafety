@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:ai_women_safety/utils/logger_util.dart';
 
 class AdminPanelService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -16,7 +17,7 @@ class AdminPanelService {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        print('User not authenticated');
+        AppLogger.warning('User not authenticated');
         return false;
       }
 
@@ -63,10 +64,10 @@ class AdminPanelService {
         'createdAt': DateTime.now().toIso8601String(),
       });
 
-      print('Emergency alert sent to police admin panel');
+      AppLogger.info('Emergency alert sent to police admin panel');
       return true;
-    } catch (e) {
-      print('Error sending emergency alert to police: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error sending emergency alert to police', e, stackTrace);
       return false;
     }
   }
@@ -94,8 +95,8 @@ class AdminPanelService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
       return true;
-    } catch (e) {
-      print('Error updating alert status: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error updating alert status', e, stackTrace);
       return false;
     }
   }
@@ -131,17 +132,16 @@ class AdminPanelService {
     try {
       // This would integrate with police notification system
       // For now, we'll just log it
-      print('Police notification sent:');
-      print('Location: $locationString');
-      print('Maps URL: $googleMapsUrl');
-      print('User: $userName ($userPhone)');
+      AppLogger.info('Police notification sent');
+      AppLogger.debug('Location: $locationString');
+      AppLogger.debug('User: $userName ($userPhone)');
 
       // In the future, this could send SMS to police hotline
       // or integrate with police dispatch system
 
       return true;
-    } catch (e) {
-      print('Error sending police notification: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('Error sending police notification', e, stackTrace);
       return false;
     }
   }

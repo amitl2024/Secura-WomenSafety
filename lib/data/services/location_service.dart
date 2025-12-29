@@ -1,4 +1,5 @@
 import 'package:geolocator/geolocator.dart';
+import 'package:ai_women_safety/utils/logger_util.dart';
 
 class LocationService {
   static bool _isLocationEnabled = false;
@@ -15,41 +16,41 @@ class LocationService {
   // Request location permission
   static Future<bool> requestLocationPermission() async {
     try {
-      print('🔍 Checking location services...');
+      AppLogger.debug('🔍 Checking location services...');
 
       // Check if location services are enabled
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      print('📍 Location services enabled: $serviceEnabled');
+      AppLogger.debug('📍 Location services enabled: $serviceEnabled');
 
       if (!serviceEnabled) {
-        print('❌ Location services are disabled');
+        AppLogger.warning('❌ Location services are disabled');
         return false;
       }
 
       // Check location permission
       LocationPermission permission = await Geolocator.checkPermission();
-      print('🔐 Current permission status: $permission');
+      AppLogger.debug('🔐 Current permission status: $permission');
 
       if (permission == LocationPermission.denied) {
-        print('📝 Requesting location permission...');
+        AppLogger.debug('📝 Requesting location permission...');
         permission = await Geolocator.requestPermission();
-        print('🔐 Permission after request: $permission');
+        AppLogger.debug('🔐 Permission after request: $permission');
 
         if (permission == LocationPermission.denied) {
-          print('❌ Location permission denied');
+          AppLogger.warning('❌ Location permission denied');
           return false;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
-        print('❌ Location permission denied forever');
+        AppLogger.warning('❌ Location permission denied forever');
         return false;
       }
 
-      print('✅ Location permission granted');
+      AppLogger.info('✅ Location permission granted');
       return true;
-    } catch (e) {
-      print('❌ Error requesting location permission: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ Error requesting location permission', e, stackTrace);
       return false;
     }
   }
@@ -60,7 +61,7 @@ class LocationService {
     if (_currentPosition != null && _lastLocationUpdateTime != null) {
       final timeSinceUpdate = DateTime.now().difference(_lastLocationUpdateTime!);
       if (timeSinceUpdate < _locationCacheDuration) {
-        print('✅ Using cached location (${timeSinceUpdate.inSeconds}s old)');
+        AppLogger.debug('✅ Using cached location (${timeSinceUpdate.inSeconds}s old)');
         return _currentPosition;
       }
     }
@@ -71,45 +72,44 @@ class LocationService {
   // Get current location
   static Future<Position?> getCurrentLocation() async {
     try {
-      print('🌍 Getting current location...');
+      AppLogger.debug('🌍 Getting current location...');
 
       bool hasPermission = await requestLocationPermission();
       if (!hasPermission) {
-        print('❌ No location permission, cannot get location');
+        AppLogger.warning('❌ No location permission, cannot get location');
         return null;
       }
 
-      print('📍 Requesting location with high accuracy...');
+      AppLogger.debug('📍 Requesting location with high accuracy...');
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: const Duration(seconds: 15),
       );
 
-      print('✅ Location obtained: ${position.latitude}, ${position.longitude}');
-      print('📍 Accuracy: ${position.accuracy}m');
-      print('⏰ Timestamp: ${position.timestamp}');
+      AppLogger.debug('✅ Location obtained: ${position.latitude}, ${position.longitude}');
+      AppLogger.verbose('📍 Accuracy: ${position.accuracy}m');
 
       _currentPosition = position;
       _lastLocationUpdateTime = DateTime.now(); // Update cache timestamp
       return position;
-    } catch (e) {
-      print('❌ Error getting current location: $e');
+    } catch (e, stackTrace) {
+      AppLogger.warning('❌ Error getting current location', e, stackTrace);
 
       // Try with lower accuracy if high accuracy fails
       try {
-        print('🔄 Retrying with medium accuracy...');
+        AppLogger.debug('🔄 Retrying with medium accuracy...');
         Position position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.medium,
           timeLimit: const Duration(seconds: 10),
         );
 
-        print(
+        AppLogger.info(
           '✅ Location obtained with medium accuracy: ${position.latitude}, ${position.longitude}',
         );
         _currentPosition = position;
         return position;
-      } catch (e2) {
-        print('❌ Failed to get location with medium accuracy: $e2');
+      } catch (e2, stackTrace2) {
+        AppLogger.error('❌ Failed to get location with medium accuracy', e2, stackTrace2);
         return null;
       }
     }
@@ -118,30 +118,30 @@ class LocationService {
   // Enable location sharing
   static Future<bool> enableLocationSharing() async {
     try {
-      print('🔧 Enabling location sharing...');
+      AppLogger.info('🔧 Enabling location sharing...');
 
       bool hasPermission = await requestLocationPermission();
       if (hasPermission) {
         _isLocationEnabled = true;
-        print('✅ Location sharing enabled');
+        AppLogger.info('✅ Location sharing enabled');
 
         // Get initial location
         Position? position = await getCurrentLocation();
         if (position != null) {
-          print('✅ Initial location obtained successfully');
+          AppLogger.info('✅ Initial location obtained successfully');
           return true;
         } else {
-          print(
+          AppLogger.warning(
             '⚠️ Location sharing enabled but could not get initial location',
           );
           return true; // Still return true as permission is granted
         }
       } else {
-        print('❌ Could not enable location sharing - permission denied');
+        AppLogger.warning('❌ Could not enable location sharing - permission denied');
         return false;
       }
-    } catch (e) {
-      print('❌ Error enabling location sharing: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ Error enabling location sharing', e, stackTrace);
       return false;
     }
   }
@@ -209,7 +209,7 @@ class LocationService {
 
   // Force refresh location
   static Future<Position?> refreshLocation() async {
-    print('🔄 Force refreshing location...');
+    AppLogger.debug('🔄 Force refreshing location...');
     _currentPosition = null; // Clear cached position
     return await getCurrentLocation();
   }
