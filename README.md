@@ -47,21 +47,36 @@ A comprehensive Flutter application designed to provide safety, support, and pea
    ```
 
 3. **Configure Firebase**
-   - Add your `google-services.json` to `android/app/`
-   - Update Firebase configuration in `lib/main.dart`
+   - Create a Firebase project in the [Firebase Console](https://console.firebase.google.com/).
+   - Add an Android app to the Firebase project and download the `google-services.json` file.
+   - Place `google-services.json` into `android/app/`.
+   - Update Firebase configuration in `lib/main.dart` (the web configuration is read from environment variables in `.env`).
 
 4. **Set up environment variables**
-   - Create `.env` file in the `assets/` directory
-- Add your API keys:
-    ```
-    GEMINI_API_KEY=your_gemini_api_key_here
-    SUPABASE_URL=your_supabase_url
-    SUPABASE_ANON_KEY=your_supabase_anon_key
-    NEWS_API_KEY=your_news_api_key (optional)
-    ```
+   - Copy the example env file and fill in your values:
+     ```bash
+     cp .env.example .env
+     ```
+     or create `.env` manually in the `assets/` directory.
+
+   - Create a file called `.env.example` (checked into version control) with the following template and then copy it to `.env` and fill in your own values (do NOT commit `.env`):
+     ```env
+     # .env.example - copy to .env and fill with your own values
+     GEMINI_API_KEY=
+     NEWS_API_KEY=
+     SUPABASE_URL=
+     SUPABASE_ANON_KEY=
+     FIREBASE_API_KEY=
+     FIREBASE_AUTH_DOMAIN=
+     FIREBASE_PROJECT_ID=
+     FIREBASE_STORAGE_BUCKET=
+     FIREBASE_MESSAGING_SENDER_ID=
+     FIREBASE_APP_ID=
+     ```
+
    - **Note**: The Police/Admin panel is a separate web application — admin credentials are managed there (see `main_admin.dart` / admin web README).
-   - **Important**: Never commit the `.env` file to version control
-   - For production, use secure environment variable management
+   - **Important**: Never commit the `.env` file to version control; keep `.env.example` in the repo as a template.
+   - For production, use secure environment variable management (e.g., CI/CD secrets, platform secret managers).
 
 5. **Run the app**
    ```bash
