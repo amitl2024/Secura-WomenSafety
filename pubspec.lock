@@ -337,6 +337,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.17.5"
+  firebase_crashlytics:
+    dependency: "direct main"
+    description:
+      name: firebase_crashlytics
+      sha256: "9897c01efaa950d2f6da8317d12452749a74dc45f33b46390a14cfe28067f271"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.5.7"
+  firebase_crashlytics_platform_interface:
+    dependency: transitive
+    description:
+      name: firebase_crashlytics_platform_interface
+      sha256: "16a71e08fbf6e00382816e1b13397898c29a54fa0ad969c2c2a3b82a704877f0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.6.35"
   firebase_messaging:
     dependency: "direct main"
     description:
@@ -704,6 +720,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.0"
+  logger:
+    dependency: "direct main"
+    description:
+      name: logger
+      sha256: a7967e31b703831a893bbc3c3dd11db08126fe5f369b5c648a36f821979f5be3
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.6.2"
   logging:
     dependency: transitive
     description:

@@ -14,6 +14,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:ai_women_safety/data/services/sms_service.dart';
 import 'package:ai_women_safety/Ui/screens/fake_call/fake_call_caller_selection_screen.dart';
 import 'package:ai_women_safety/data/services/safety_timer_service.dart';
+import 'package:ai_women_safety/utils/logger_util.dart';
 
 // Add this to your color palette for easy reuse
 const Color kPrimaryPink = Color(0xFFF8BBD0);
@@ -761,10 +762,8 @@ class _HomeScreenContentState extends State<_HomeScreenContent>
           "https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}";
 
       // Debug logging
-      print("Location data for SMS:");
-      print("Position: ${position.latitude}, ${position.longitude}");
-      print("Location String: $locationString");
-      print("Google Maps URL: $googleMapsUrl");
+      AppLogger.debug("Location data for SMS");
+      AppLogger.verbose("Position: ${position.latitude}, ${position.longitude}");
 
       // Verify location data is valid
       if (position.latitude == 0.0 && position.longitude == 0.0) {
@@ -773,7 +772,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent>
       }
 
       // Send alert to admin panel
-      print("📡 Sending alert to admin panel...");
+      AppLogger.info("📡 Sending alert to admin panel...");
       try {
         await AdminPanelService.sendEmergencyAlertToPolice(
           position: position,
@@ -782,14 +781,14 @@ class _HomeScreenContentState extends State<_HomeScreenContent>
           additionalInfo:
               "Emergency alert from ${_userName.isNotEmpty ? _userName : "User"}",
         );
-        print("✅ Alert sent to admin panel successfully");
-      } catch (e) {
-        print("❌ Failed to send alert to admin panel: $e");
+        AppLogger.info("✅ Alert sent to admin panel successfully");
+      } catch (e, stackTrace) {
+        AppLogger.error("❌ Failed to send alert to admin panel", e, stackTrace);
       }
 
       // Fetch emergency contacts from Firestore
       List<EmergencyContact> contacts =
-          await EmergencyContactService.getEmergencyContacts().first;
+          await EmergencyContactService.getEmergencyContactsOnce();
 
       // Send SMS to each contact using the emergency alert SMS service
       if (contacts.isNotEmpty) {
@@ -806,8 +805,8 @@ class _HomeScreenContentState extends State<_HomeScreenContent>
                 googleMapsUrl,
               );
               successCount++;
-            } catch (e) {
-              print('Failed to send SMS to ${contact.name}: $e');
+            } catch (e, stackTrace) {
+              AppLogger.error('Failed to send SMS to ${contact.name}', e, stackTrace);
               // Continue with other contacts even if one fails
             }
           }
@@ -827,7 +826,8 @@ class _HomeScreenContentState extends State<_HomeScreenContent>
           "No emergency contacts found. Please add emergency contacts first.",
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      AppLogger.error("Error sending emergency alert", e, stackTrace);
       _showErrorSnackBar("Error sending emergency alert: $e");
     }
   }

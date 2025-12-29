@@ -1,4 +1,3 @@
-import 'package:geolocator/geolocator.dart';
 import '../models/safe_place_models.dart';
 
 class SafePlacesService {
@@ -19,100 +18,6 @@ class SafePlacesService {
   }
 
   // Removed API-related methods since we're only using mock data
-
-  static String _getPlaceTypeFromGoogleType(String googleType) {
-    switch (googleType) {
-      case 'hospital':
-        return 'Hospital';
-      case 'police':
-        return 'Police Station';
-      case 'fire_station':
-        return 'Fire Station';
-      case 'pharmacy':
-        return 'Pharmacy';
-      case 'bank':
-        return 'Bank';
-      case 'atm':
-        return 'ATM';
-      case 'gas_station':
-        return 'Gas Station';
-      case 'restaurant':
-        return 'Restaurant';
-      case 'shopping_mall':
-        return 'Shopping Mall';
-      case 'library':
-        return 'Library';
-      case 'school':
-        return 'School';
-      case 'university':
-        return 'University';
-      default:
-        return 'Safe Place';
-    }
-  }
-
-  static String _getDangerousAreaTypeFromGoogleType(String googleType) {
-    switch (googleType) {
-      case 'bar':
-        return 'Bar';
-      case 'night_club':
-        return 'Night Club';
-      case 'casino':
-        return 'Casino';
-      case 'parking':
-        return 'Parking Area';
-      case 'subway_station':
-        return 'Subway Station';
-      case 'bus_station':
-        return 'Bus Station';
-      default:
-        return 'Area of Concern';
-    }
-  }
-
-  static DangerLevel _getDangerLevel(String type) {
-    switch (type) {
-      case 'bar':
-      case 'night_club':
-        return DangerLevel.medium;
-      case 'casino':
-        return DangerLevel.high;
-      case 'parking':
-      case 'subway_station':
-      case 'bus_station':
-        return DangerLevel.low;
-      default:
-        return DangerLevel.low;
-    }
-  }
-
-  static String _getDangerDescription(String type) {
-    switch (type) {
-      case 'bar':
-        return 'Avoid alone at night, stay in groups';
-      case 'night_club':
-        return 'High risk area, avoid if possible';
-      case 'casino':
-        return 'High crime area, avoid at all times';
-      case 'parking':
-        return 'Be cautious, well-lit areas only';
-      case 'subway_station':
-        return 'Stay alert, avoid late hours';
-      case 'bus_station':
-        return 'Be cautious, stay in public areas';
-      default:
-        return 'Exercise caution in this area';
-    }
-  }
-
-  static double _calculateDistance(
-    double lat1,
-    double lon1,
-    double lat2,
-    double lon2,
-  ) {
-    return Geolocator.distanceBetween(lat1, lon1, lat2, lon2);
-  }
 
   // Optimized mock data - returns data immediately
   static List<SafePlace> _getMockSafePlaces(double lat, double lng) {

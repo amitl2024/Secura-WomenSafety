@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:ai_women_safety/data/services/auth_service.dart';
 import 'package:ai_women_safety/data/services/firestore_service.dart';
-import 'package:ai_women_safety/data/services/admin_auth_service.dart';
 import 'package:ai_women_safety/Ui/screens/auth/signup_screen.dart';
 import 'package:ai_women_safety/Ui/screens/home/home_screen.dart';
-import 'package:ai_women_safety/Ui/screens/admin/admin_panel_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -38,28 +36,6 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // Check if admin credentials
-      if (AdminAuthService.validateCredentials(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
-      )) {
-        // Admin login - save session and redirect to admin panel
-        final success = await AdminAuthService.login(
-          _emailController.text.trim(),
-          _passwordController.text.trim(),
-        );
-
-        if (success && mounted) {
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const AdminPanelScreen()),
-          );
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Admin login successful!')),
-          );
-          return;
-        }
-      }
-
       // Regular user login
       final userCredential = await _authService.login(
         _emailController.text.trim(),
@@ -374,39 +350,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       const SizedBox(height: 24),
-
-                      // // Admin credentials info
-                      // Container(
-                      //   padding: const EdgeInsets.all(12),
-                      //   decoration: BoxDecoration(
-                      //     color: Colors.blue.withOpacity(0.1),
-                      //     borderRadius: BorderRadius.circular(8),
-                      //     border: Border.all(
-                      //       color: Colors.blue.withOpacity(0.3),
-                      //     ),
-                      //   ),
-                      //   child: const Column(
-                      //     children: [
-                      //       Text(
-                      //         'Admin Access',
-                      //         style: TextStyle(
-                      //           fontWeight: FontWeight.bold,
-                      //           color: Colors.blue,
-                      //         ),
-                      //       ),
-                      //       SizedBox(height: 4),
-                      //       Text(
-                      //         'Email: admin@gmail.com',
-                      //         style: TextStyle(color: Colors.blue),
-                      //       ),
-                      //       Text(
-                      //         'Password: admin123',
-                      //         style: TextStyle(color: Colors.blue),
-                      //       ),
-                      //     ],
-                      //   ),
-                      // ),
-                      // const SizedBox(height: 24),
 
                       // Signup Link
                       Row(

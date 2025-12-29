@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/news_models.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:ai_women_safety/utils/logger_util.dart';
 
 class NewsService {
   static final String? _newsApiKey = dotenv.env['NEWS_API_KEY'];
@@ -31,7 +33,7 @@ class NewsService {
     String country = 'in', // India by default
   }) async {
     try {
-      print('📰 Fetching safety news...');
+      AppLogger.debug('📰 Fetching safety news...');
 
       final query = _safetyKeywords.join(' OR ');
       final url =
@@ -42,7 +44,13 @@ class NewsService {
           'pageSize=$pageSize&'
           'apiKey=$_newsApiKey';
 
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(Uri.parse(url)).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          AppLogger.error("News API request timeout");
+          throw TimeoutException('Request timeout');
+        },
+      );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -56,11 +64,11 @@ class NewsService {
 
         return articles;
       } else {
-        print('❌ News API error: ${response.statusCode}');
+        AppLogger.error('❌ News API error: ${response.statusCode}', response.body);
         return _getMockSafetyNews();
       }
-    } catch (e) {
-      print('❌ Error fetching news: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ Error fetching news', e, stackTrace);
       return _getMockSafetyNews();
     }
   }
@@ -71,9 +79,7 @@ class NewsService {
     int pageSize = 5,
   }) async {
     try {
-      print('📰 Fetching top headlines...');
-
-      // return _getMockTopHeadlines();
+      AppLogger.debug('📰 Fetching top headlines...');
 
       final url =
           '$_baseUrl/top-headlines?'
@@ -82,7 +88,13 @@ class NewsService {
           'pageSize=$pageSize&'
           'apiKey=$_newsApiKey';
 
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(Uri.parse(url)).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          AppLogger.error("News API request timeout");
+          throw TimeoutException('Request timeout');
+        },
+      );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -96,11 +108,11 @@ class NewsService {
 
         return articles;
       } else {
-        print('❌ News API error: ${response.statusCode}');
+        AppLogger.error('❌ News API error: ${response.statusCode}', response.body);
         return _getMockTopHeadlines();
       }
-    } catch (e) {
-      print('❌ Error fetching headlines: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ Error fetching headlines', e, stackTrace);
       return _getMockTopHeadlines();
     }
   }

@@ -45,5 +45,49 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	
+	<!-- ============================================ -->
+	<!-- Permissions for Women Safety App Features -->
+	<!-- ============================================ -->
+	
+	<!-- Location Permissions - Required for emergency location sharing -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Secura needs your location to share it with emergency contacts during emergencies and to help you find nearby safe places.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Secura needs your location to share it with emergency contacts during emergencies, even when the app is in the background.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Secura needs your location to share it with emergency contacts during emergencies, even when the app is in the background.</string>
+	
+	<!-- Phone Call Permission - Required for emergency calls -->
+	<key>NSPhoneCallUsageDescription</key>
+	<string>Secura needs to make emergency calls to your emergency contacts and emergency services.</string>
+	
+	<!-- Photo Library Permission - Required for incident reports with images -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Secura needs access to your photo library to attach images to incident reports for documentation purposes.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Secura needs access to save images to your photo library when documenting incidents.</string>
+	
+	<!-- Camera Permission - Required for taking photos in incident reports -->
+	<key>NSCameraUsageDescription</key>
+	<string>Secura needs access to your camera to take photos for incident reports. Your safety is our priority - only use this feature when it's safe to do so.</string>
+	
+	<!-- Microphone Permission - Optional, for future voice features -->
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Secura may need access to your microphone for voice-activated emergency features and hands-free operation.</string>
+	
+	<!-- Background Modes - For location tracking during emergencies -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>location</string>
+		<string>fetch</string>
+	</array>
+	
+	<!-- App Transport Security - Allow HTTP connections if needed (not recommended for production) -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+	</dict>
 </dict>
 </plist>

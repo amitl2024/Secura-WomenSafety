@@ -24,7 +24,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   String _location = "";
   String _profilePicUrl = "";
   bool _locationSharing = true;
-  bool _darkMode = false;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -595,21 +594,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                         onChanged:
                             (value) => setState(() => _locationSharing = value),
                         icon: Icons.location_on,
-                      ),
-                    ],
-                  ),
-
-                  // App Settings
-                  _buildSectionCard(
-                    title: "App Settings",
-                    icon: Icons.settings,
-                    children: [
-                      _buildSwitchTile(
-                        title: "Dark Mode",
-                        subtitle: "Switch to dark theme",
-                        value: _darkMode,
-                        onChanged: (value) => setState(() => _darkMode = value),
-                        icon: Icons.dark_mode,
                       ),
                     ],
                   ),

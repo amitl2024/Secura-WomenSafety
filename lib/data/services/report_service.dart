@@ -4,6 +4,7 @@ import '../models/report_model.dart';
 import 'supabase_storage_service.dart';
 import 'dart:io';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:ai_women_safety/utils/logger_util.dart';
 
 class ReportService {
   static final ReportService _instance = ReportService._internal();
@@ -12,19 +13,21 @@ class ReportService {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final SupabaseStorageService _supabaseStorageService = SupabaseStorageService();
+  final SupabaseStorageService _supabaseStorageService =
+      SupabaseStorageService();
 
   // Initialize services
   Future<void> initialize() async {
     // Initialize Supabase storage with configuration from .env
     final supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
     final supabaseKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
-    
+
     if (supabaseUrl.isNotEmpty && supabaseKey.isNotEmpty) {
       await _supabaseStorageService.initialize(supabaseUrl, supabaseKey);
-      // Supabase Storage initialized
     } else {
-      // Supabase configuration missing in .env file
+      AppLogger.warning(
+        '⚠️ Supabase configuration missing (SUPABASE_URL or SUPABASE_ANON_KEY not found in .env)',
+      );
     }
   }
 
@@ -49,8 +52,12 @@ class ReportService {
       final userDoc = await _firestore.collection('users').doc(user.uid).get();
       final userData = userDoc.data() ?? {};
 
-      final userName = isAnonymous ? 'Anonymous' : (userData['name'] as String? ?? user.displayName ?? 'User');
-      final userEmail = isAnonymous ? 'anonymous@example.com' : user.email ?? '';
+      final userName =
+          isAnonymous
+              ? 'Anonymous'
+              : (userData['name'] as String? ?? user.displayName ?? 'User');
+      final userEmail =
+          isAnonymous ? 'anonymous@example.com' : user.email ?? '';
 
       // Upload images to Supabase Storage if provided
       List<String> imageUrls = [];
@@ -75,7 +82,9 @@ class ReportService {
       );
 
       // Save report to Firestore
-      final docRef = await _firestore.collection('reports').add(report.toJson());
+      final docRef = await _firestore
+          .collection('reports')
+          .add(report.toJson());
       final savedReport = report.copyWith(id: docRef.id);
 
       // Report submitted successfully with ID: ${docRef.id}
@@ -121,7 +130,8 @@ class ReportService {
   // Get report by ID
   Future<ReportModel?> getReportById(String reportId) async {
     try {
-      final docSnapshot = await _firestore.collection('reports').doc(reportId).get();
+      final docSnapshot =
+          await _firestore.collection('reports').doc(reportId).get();
       if (docSnapshot.exists) {
         return ReportModel.fromJson(docSnapshot.data()!, id: docSnapshot.id);
       }
@@ -133,7 +143,11 @@ class ReportService {
   }
 
   // Update report status (for admin)
-  Future<bool> updateReportStatus(String reportId, String status, {String? adminNotes}) async {
+  Future<bool> updateReportStatus(
+    String reportId,
+    String status, {
+    String? adminNotes,
+  }) async {
     try {
       await _firestore.collection('reports').doc(reportId).update({
         'status': status,
@@ -158,7 +172,10 @@ class ReportService {
         for (final imageUrl in report.imageUrls) {
           // Extract the file path from the URL
           final uri = Uri.parse(imageUrl);
-          final filePath = uri.pathSegments.skipWhile((segment) => segment != 'storage').skip(2).join('/');
+          final filePath = uri.pathSegments
+              .skipWhile((segment) => segment != 'storage')
+              .skip(2)
+              .join('/');
           await _supabaseStorageService.deleteImage(filePath);
         }
       }
@@ -178,31 +195,43 @@ class ReportService {
     try {
       final now = DateTime.now();
       final lastWeek = now.subtract(const Duration(days: 7));
-      
+
       // Total reports
-      final totalReportsQuery = await _firestore.collection('reports').count().get();
+      final totalReportsQuery =
+          await _firestore.collection('reports').count().get();
       final totalReports = totalReportsQuery.count;
-      
+
       // Reports by status
-      final pendingReportsQuery = await _firestore.collection('reports')
-          .where('status', isEqualTo: 'pending')
-          .count()
-          .get();
-      final resolvedReportsQuery = await _firestore.collection('reports')
-          .where('status', isEqualTo: 'resolved')
-          .count()
-          .get();
-      final inProgressReportsQuery = await _firestore.collection('reports')
-          .where('status', isEqualTo: 'in_progress')
-          .count()
-          .get();
-      
+      final pendingReportsQuery =
+          await _firestore
+              .collection('reports')
+              .where('status', isEqualTo: 'pending')
+              .count()
+              .get();
+      final resolvedReportsQuery =
+          await _firestore
+              .collection('reports')
+              .where('status', isEqualTo: 'resolved')
+              .count()
+              .get();
+      final inProgressReportsQuery =
+          await _firestore
+              .collection('reports')
+              .where('status', isEqualTo: 'in_progress')
+              .count()
+              .get();
+
       // Recent reports (last 7 days)
-      final recentReportsQuery = await _firestore.collection('reports')
-          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(lastWeek))
-          .count()
-          .get();
-      
+      final recentReportsQuery =
+          await _firestore
+              .collection('reports')
+              .where(
+                'timestamp',
+                isGreaterThanOrEqualTo: Timestamp.fromDate(lastWeek),
+              )
+              .count()
+              .get();
+
       return {
         'totalReports': totalReports,
         'pendingReports': pendingReportsQuery.count,

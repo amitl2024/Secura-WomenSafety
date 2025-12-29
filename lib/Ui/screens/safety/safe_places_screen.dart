@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../data/services/safe_places_service.dart';
 import '../../../data/services/location_service.dart';
 import '../../../data/models/safe_place_models.dart';
+import 'package:ai_women_safety/utils/logger_util.dart';
 
 class SafePlacesScreen extends StatefulWidget {
   const SafePlacesScreen({super.key});
@@ -78,14 +79,14 @@ class _SafePlacesScreenState extends State<SafePlacesScreen>
         _errorMessage = '';
       });
 
-      print('🌍 Starting to load nearby places...');
+      AppLogger.debug('🌍 Starting to load nearby places...');
 
       // Get current location - this is quick with our optimized LocationService
       _currentPosition = await LocationService.getCurrentPosition();
-      print('📍 Current position: $_currentPosition');
+      AppLogger.debug('📍 Current position obtained');
 
       if (_currentPosition == null) {
-        print('❌ No location available, using default coordinates');
+        AppLogger.warning('❌ No location available, using default coordinates');
         // Use default coordinates if location is not available
         _currentPosition = Position(
           latitude: 28.6139, // Delhi coordinates as default
@@ -102,7 +103,7 @@ class _SafePlacesScreenState extends State<SafePlacesScreen>
       }
 
       // Optimize: Run both API calls concurrently using Future.wait()
-      print('🔍 Loading places data concurrently...');
+      AppLogger.debug('🔍 Loading places data concurrently...');
       final List<dynamic> results = await Future.wait([
         SafePlacesService.getNearbySafePlaces(
           latitude: _currentPosition!.latitude,
@@ -117,7 +118,7 @@ class _SafePlacesScreenState extends State<SafePlacesScreen>
       final safePlaces = results[0] as List<SafePlace>;
       final dangerousAreas = results[1] as List<DangerousArea>;
 
-      print(
+      AppLogger.info(
         '✅ Loaded ${safePlaces.length} safe places and ${dangerousAreas.length} dangerous areas',
       );
 
@@ -126,8 +127,8 @@ class _SafePlacesScreenState extends State<SafePlacesScreen>
         _dangerousAreas = dangerousAreas;
         _isLoading = false;
       });
-    } catch (e) {
-      print('❌ Error in _loadNearbyPlaces: $e');
+    } catch (e, stackTrace) {
+      AppLogger.error('❌ Error in _loadNearbyPlaces', e, stackTrace);
       setState(() {
         _isLoading = false;
         _errorMessage = 'Error loading nearby places: ${e.toString()}';

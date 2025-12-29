@@ -11,6 +11,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:telephony/telephony.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
+import 'package:ai_women_safety/utils/logger_util.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -119,11 +120,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         _chatId = await _createChatSession(initialPrompt: text);
       }
       await _saveMessage(text: text, isUser: true);
-      
+
       // For emergency messages, use a pre-defined emergency response
-      final reply = _emotionalService.needsImmediateSupport(text) 
-          ? _emotionalService.getEmergencySupportMessage()
-          : await fetchGeminiReply(text);
+      final reply =
+          _emotionalService.needsImmediateSupport(text)
+              ? _emotionalService.getEmergencySupportMessage()
+              : await fetchGeminiReply(text);
       _typingAnimationController.stop();
 
       setState(() {
@@ -133,7 +135,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
 
       await _saveMessage(text: reply, isUser: false);
       await _updateChatUpdatedAt();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      AppLogger.error("Error sending message", e, stackTrace);
       _typingAnimationController.stop();
       setState(() {
         _messages.add(
@@ -514,46 +517,47 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: const Row(
-          children: [
-            Icon(Icons.emergency, color: Colors.red, size: 28),
-            SizedBox(width: 12),
-            Text("Emergency Alert", style: TextStyle(color: Colors.red)),
-          ],
-        ),
-        content: const Text(
-          "I detected that you might be in danger. Would you like me to send an emergency alert with your location to your emergency contacts?",
-          style: TextStyle(fontSize: 16),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(context);
-              _sendEmergencyAlert();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            title: const Row(
+              children: [
+                Icon(Icons.emergency, color: Colors.red, size: 28),
+                SizedBox(width: 12),
+                Text("Emergency Alert", style: TextStyle(color: Colors.red)),
+              ],
+            ),
+            content: const Text(
+              "I detected that you might be in danger. Would you like me to send an emergency alert with your location to your emergency contacts?",
+              style: TextStyle(fontSize: 16),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text("Cancel"),
               ),
-            ),
-            child: const Text(
-              "Send Alert",
-              style: TextStyle(color: Colors.white),
-            ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  _sendEmergencyAlert();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  "Send Alert",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -578,14 +582,18 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         // Try to refresh location once more
         position = await LocationService.refreshLocation();
         if (position == null) {
-          String errorMessage = await LocationService.getLocationStatusMessage();
-          _showSnackBar("Could not get your location. $errorMessage", Colors.red);
+          String errorMessage =
+              await LocationService.getLocationStatusMessage();
+          _showSnackBar(
+            "Could not get your location. $errorMessage",
+            Colors.red,
+          );
           return;
         }
       }
 
       // Create location string directly from the position
-      String locationString = 
+      String locationString =
           "📍 Current Location:\n"
           "Latitude: ${position.latitude.toStringAsFixed(6)}\n"
           "Longitude: ${position.longitude.toStringAsFixed(6)}\n"
@@ -593,7 +601,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           "Time: ${DateTime.fromMillisecondsSinceEpoch(position.timestamp.millisecondsSinceEpoch).toString().substring(0, 19)}";
 
       // Create Google Maps URL with better compatibility
-      String googleMapsUrl = 
+      String googleMapsUrl =
           "https://www.google.com/maps/search/?api=1&query=${position.latitude},${position.longitude}";
 
       // Send alert to admin panel
@@ -604,12 +612,13 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           googleMapsUrl: googleMapsUrl,
           additionalInfo: "Emergency alert from chatbot - User in danger",
         );
-      } catch (e) {
-        print("Failed to send alert to admin panel: $e");
+      } catch (e, stackTrace) {
+        AppLogger.error("Failed to send alert to admin panel", e, stackTrace);
       }
 
       // Fetch emergency contacts
-      List<EmergencyContact> contacts = await EmergencyContactService.getEmergencyContacts().first;
+      List<EmergencyContact> contacts =
+          await EmergencyContactService.getEmergencyContactsOnce();
 
       // Send SMS to each contact using the emergency alert SMS service
       if (contacts.isNotEmpty) {
@@ -626,8 +635,12 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
                 googleMapsUrl,
               );
               successCount++;
-            } catch (e) {
-              print('Failed to send SMS to ${contact.name}: $e');
+            } catch (e, stackTrace) {
+              AppLogger.error(
+                'Failed to send SMS to ${contact.name}',
+                e,
+                stackTrace,
+              );
               // Continue with other contacts even if one fails
             }
           }
@@ -650,7 +663,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
           Colors.red,
         );
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      AppLogger.error("Error sending emergency alert", e, stackTrace);
       _showSnackBar("Error sending emergency alert: $e", Colors.red);
     }
   }
@@ -664,8 +678,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
             color == Colors.red
                 ? const Icon(Icons.error, color: Colors.white, size: 20)
                 : color == Colors.green
-                    ? const Icon(Icons.check_circle, color: Colors.white, size: 20)
-                    : const Icon(Icons.info, color: Colors.white, size: 20),
+                ? const Icon(Icons.check_circle, color: Colors.white, size: 20)
+                : const Icon(Icons.info, color: Colors.white, size: 20),
             const SizedBox(width: 8),
             Text(message),
           ],
@@ -673,9 +687,7 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
         backgroundColor: color,
         duration: const Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
     );
   }
@@ -1188,7 +1200,8 @@ class _ChatScreenState extends State<ChatScreen> with TickerProviderStateMixin {
       });
 
       _scrollToBottom();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      AppLogger.error("Error loading chat history", e, stackTrace);
       setState(() {
         _loadingHistory = false;
       });
