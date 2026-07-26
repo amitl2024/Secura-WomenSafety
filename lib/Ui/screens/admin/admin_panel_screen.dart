@@ -129,96 +129,87 @@ class _AdminPanelScreenState extends State<AdminPanelScreen>
               color: Color(0xFF2D3748),
             ),
           ),
-          const SizedBox(height: 20),
-          _loginTime != null
-              ? Text(
-                'Logged in at: ${_loginTime!.toLocal().toString()}',
-                style: const TextStyle(fontSize: 14, color: Color(0xFF718096)),
-              )
-              : const SizedBox(),
+
+          const SizedBox(height: 24),
+          StreamBuilder<List<UserModel>>(
+            stream: UserService().getAllUsers(),
+            builder: (context, userSnapshot) {
+              final userCount =
+                  userSnapshot.hasData
+                      ? userSnapshot.data!.length.toString()
+                      : '0';
+
+              return StreamBuilder<List<Map<String, dynamic>>>(
+                stream: AdminPanelService.getEmergencyAlerts(),
+                builder: (context, alertSnapshot) {
+                  int activeAlerts = 0;
+                  int respondedAlerts = 0;
+                  int resolvedAlerts = 0;
+
+                  if (alertSnapshot.hasData) {
+                    for (var alert in alertSnapshot.data!) {
+                      if (alert['status'] == 'active') {
+                        activeAlerts++;
+                      } else if (alert['status'] == 'responded') {
+                        respondedAlerts++;
+                      } else if (alert['status'] == 'resolved') {
+                        resolvedAlerts++;
+                      }
+                    }
+                  }
+
+                  return Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard(
+                              title: 'Active Alerts',
+                              count: activeAlerts.toString(),
+                              icon: Icons.warning,
+                              color: Colors.red,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildStatCard(
+                              title: 'Responded Alerts',
+                              count: respondedAlerts.toString(),
+                              icon: Icons.local_police,
+                              color: Colors.orange,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildStatCard(
+                              title: 'Resolved Alerts',
+                              count: resolvedAlerts.toString(),
+                              icon: Icons.check_circle,
+                              color: Colors.green,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: _buildStatCard(
+                              title: 'Total Users',
+                              count: userCount,
+                              icon: Icons.people,
+                              color: Colors.blue,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
           const SizedBox(height: 30),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  title: 'Active Alerts',
-                  count: '0', // This should be dynamic
-                  icon: Icons.warning,
-                  color: Colors.red,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatCard(
-                  title: 'Responded Alerts',
-                  count: '0', // This should be dynamic
-                  icon: Icons.local_police,
-                  color: Colors.orange,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatCard(
-                  title: 'Resolved Alerts',
-                  count: '0', // This should be dynamic
-                  icon: Icons.check_circle,
-                  color: Colors.green,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatCard(
-                  title: 'Total Users',
-                  count: '0', // This should be dynamic
-                  icon: Icons.people,
-                  color: Colors.blue,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 30),
-          const Text(
-            'Quick Actions',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF2D3748),
-            ),
-          ),
-          const SizedBox(height: 16),
-          GridView.count(
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              _buildQuickActionButton(
-                title: 'View All Alerts',
-                icon: Icons.list_alt,
-                onPressed: () => _tabController.animateTo(1),
-              ),
-              _buildQuickActionButton(
-                title: 'View Users',
-                icon: Icons.people,
-                onPressed: () => _tabController.animateTo(2),
-              ),
-              _buildQuickActionButton(
-                title: 'View Reports',
-                icon: Icons.analytics,
-                onPressed: () => _tabController.animateTo(3),
-              ),
-              _buildQuickActionButton(
-                title: 'Refresh Data',
-                icon: Icons.refresh,
-                onPressed: () => setState(() {}),
-              ),
-            ],
-          ),
         ],
       ),
     );

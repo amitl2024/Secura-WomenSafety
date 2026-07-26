@@ -1,0 +1,2 @@
+-dontwarn kotlin.uuid.**
+-keep class kotlin.uuid.** { *; }

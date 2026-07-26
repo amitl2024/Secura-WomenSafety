@@ -1,4 +1,5 @@
 import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:ai_women_safety/utils/logger_util.dart';
 
 class LocationService {
@@ -6,6 +7,37 @@ class LocationService {
   static Position? _currentPosition;
   static DateTime? _lastLocationUpdateTime;
   static const Duration _locationCacheDuration = Duration(minutes: 1);
+  static const String _prefKey = 'is_location_sharing_enabled';
+
+  // Initialize from SharedPreferences
+  static Future<void> init() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _isLocationEnabled = prefs.getBool(_prefKey) ?? false;
+      
+      if (_isLocationEnabled) {
+        // Verify we still have permission
+        bool hasPermission = await checkLocationPermissionStatus();
+        if (!hasPermission) {
+          _isLocationEnabled = false;
+          await prefs.setBool(_prefKey, false);
+        } else {
+          // Pre-fetch location if enabled
+          getCurrentLocation();
+        }
+      }
+    } catch (e) {
+      AppLogger.error('Error initializing location service preferences', e);
+    }
+  }
+  
+  // Helper to just check permission without requesting it yet
+  static Future<bool> checkLocationPermissionStatus() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return false;
+    LocationPermission permission = await Geolocator.checkPermission();
+    return permission == LocationPermission.whileInUse || permission == LocationPermission.always;
+  }
 
   // Get current location enabled state
   static bool get isLocationEnabled => _isLocationEnabled;
@@ -123,6 +155,9 @@ class LocationService {
       bool hasPermission = await requestLocationPermission();
       if (hasPermission) {
         _isLocationEnabled = true;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool(_prefKey, true);
+        
         AppLogger.info('✅ Location sharing enabled');
 
         // Get initial location
@@ -147,9 +182,15 @@ class LocationService {
   }
 
   // Disable location sharing
-  static void disableLocationSharing() {
+  static Future<void> disableLocationSharing() async {
     _isLocationEnabled = false;
     _currentPosition = null;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_prefKey, false);
+    } catch (e) {
+      AppLogger.error('Error disabling location sharing in prefs', e);
+    }
   }
 
   // Get location as formatted string

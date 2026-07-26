@@ -54,7 +54,7 @@ class GeminiService {
                     0.9, // Higher for more creative and empathetic responses
                 "topP": 0.95,
                 "topK": 40,
-                "maxOutputTokens": 200,
+                "maxOutputTokens": 1024,
                 "candidateCount": 1,
                 "stopSequences": [],
               },
@@ -83,13 +83,11 @@ class GeminiService {
 
           // Check for various finish reasons
           final finishReason = candidate["finishReason"];
-          if (finishReason != null) {
+          if (finishReason != null && finishReason != "STOP" && finishReason != "MAX_TOKENS") {
             AppLogger.warning(
               "⚠️ Response finished with reason: $finishReason",
             );
             switch (finishReason) {
-              case "MAX_TOKENS":
-                return "I'm here to help, sweetheart! Could you please ask a shorter question so I can give you a complete response? 💜";
               case "SAFETY":
                 return "I can't provide a response to that question due to safety guidelines. Could you please rephrase your question? 💜";
               case "RECITATION":

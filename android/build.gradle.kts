@@ -9,6 +9,15 @@ allprojects {
         google()
         mavenCentral()
     }
+    configurations.all {
+        resolutionStrategy {
+            force("androidx.core:core:1.15.0")
+            force("androidx.core:core-ktx:1.15.0")
+            force("org.jetbrains.kotlin:kotlin-stdlib:2.0.0")
+            force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.0.0")
+            force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.0.0")
+        }
+    }
 }
 
 val newBuildDir: Directory = rootProject.layout.buildDirectory.dir("../../build").get()

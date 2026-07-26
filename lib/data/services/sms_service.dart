@@ -76,14 +76,12 @@ Future<void> sendEmergencyAlertSMS(
       throw Exception('SMS permission not granted or device not SMS capable');
     }
 
+    final String timeNow = DateTime.now().toString();
     final String body =
         "🚨 EMERGENCY ALERT 🚨\n"
-        "I need help! I'm in danger!\n"
-        "Name: $userName\n"
-        "Location: $locationString\n"
-        "Google Maps: $googleMapsUrl\n"
-        "Please contact me or emergency services immediately!\n"
-        "Time: ${DateTime.now().toString()}";
+        "I need help immediately! Please contact me or emergency services.\n\n"
+        "👤 Name: $userName\n"
+        "📍 My Live Location:\n$googleMapsUrl";
 
     // Debug logging
     AppLogger.debug('📤 Sending emergency SMS to $contactNumber');
@@ -96,19 +94,26 @@ Future<void> sendEmergencyAlertSMS(
     } else {
       // Android: Try direct SMS first, then fallback to default app
       try {
+        // Clean phone number (remove non-digits except +)
+        String cleanNumber = contactNumber.replaceAll(RegExp(r'[^\d+]'), '');
+
         // Try to send SMS with multipart support for long messages
         bool isMultipart = body.length > 160;
         AppLogger.debug("Using multipart SMS: $isMultipart");
 
         await _telephony.sendSms(
-          to: contactNumber,
+          to: cleanNumber,
           message: body,
           isMultipart: isMultipart,
         );
-        AppLogger.info('✅ Emergency SMS sent successfully to $contactNumber');
+        AppLogger.info('✅ Emergency SMS sent successfully to $cleanNumber');
       } catch (e, stackTrace) {
-        AppLogger.warning('Direct SMS failed, trying default app...', e, stackTrace);
-        
+        AppLogger.warning(
+          'Direct SMS failed, trying default app...',
+          e,
+          stackTrace,
+        );
+
         // Fallback to default SMS app
         await _telephony.sendSmsByDefaultApp(
           to: contactNumber,
@@ -129,19 +134,17 @@ Future<void> _sendSmsViaUrlLauncher(String phoneNumber, String message) async {
   try {
     // Clean phone number (remove non-digits except +)
     String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-    
+
     // iOS uses sms: URL scheme
     // Format: sms:+1234567890&body=message
     final Uri smsUri = Uri(
       scheme: 'sms',
       path: cleanNumber,
-      queryParameters: {
-        'body': message,
-      },
+      queryParameters: {'body': message},
     );
 
     AppLogger.debug('Opening SMS URL: sms:$cleanNumber');
-    
+
     if (await canLaunchUrl(smsUri)) {
       await launchUrl(smsUri, mode: LaunchMode.externalApplication);
       AppLogger.info('✅ SMS app opened successfully');

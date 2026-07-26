@@ -433,6 +433,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent>
           ],
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               padding: const EdgeInsets.all(12),
@@ -763,7 +764,9 @@ class _HomeScreenContentState extends State<_HomeScreenContent>
 
       // Debug logging
       AppLogger.debug("Location data for SMS");
-      AppLogger.verbose("Position: ${position.latitude}, ${position.longitude}");
+      AppLogger.verbose(
+        "Position: ${position.latitude}, ${position.longitude}",
+      );
 
       // Verify location data is valid
       if (position.latitude == 0.0 && position.longitude == 0.0) {
@@ -806,7 +809,11 @@ class _HomeScreenContentState extends State<_HomeScreenContent>
               );
               successCount++;
             } catch (e, stackTrace) {
-              AppLogger.error('Failed to send SMS to ${contact.name}', e, stackTrace);
+              AppLogger.error(
+                'Failed to send SMS to ${contact.name}',
+                e,
+                stackTrace,
+              );
               // Continue with other contacts even if one fails
             }
           }
@@ -1019,7 +1026,9 @@ class _HomeScreenContentState extends State<_HomeScreenContent>
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  "Location sharing is active • Emergency contacts ready",
+                  _liveLocation
+                      ? "Location sharing is active • Emergency contacts ready"
+                      : "Location sharing is off • Emergency contacts ready",
                   style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                 ),
               ],
@@ -1120,8 +1129,10 @@ class _HomeScreenContentState extends State<_HomeScreenContent>
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            children: [
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
               Expanded(
                 child: _buildActionCard(
                   "Emergency Contacts",
@@ -1159,7 +1170,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent>
               const SizedBox(width: 12),
               Expanded(child: _buildSafetyTimerCard()),
             ],
-          ),
+          )),
         ],
       ),
     );
@@ -1188,6 +1199,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent>
           ],
         ),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               padding: const EdgeInsets.all(12),

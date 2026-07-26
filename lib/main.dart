@@ -6,10 +6,14 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter/foundation.dart';
 import 'Ui/screens/auth/login_screen.dart';
 import 'Ui/screens/auth/signup_screen.dart';
+import 'package:ai_women_safety/Ui/screens/admin/admin_panel_screen.dart';
+import 'package:ai_women_safety/data/services/firestore_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ai_women_safety/data/services/location_service.dart';
 import 'package:ai_women_safety/data/services/report_service.dart';
 import 'package:ai_women_safety/utils/logger_util.dart';
+import 'package:home_widget/home_widget.dart';
+import 'package:ai_women_safety/data/services/background_sos_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,6 +40,14 @@ Future<void> main() async {
     );
   } else {
     await Firebase.initializeApp();
+  }
+
+  // Register HomeWidget interactivity callback for background execution
+  try {
+    await HomeWidget.registerInteractivityCallback(sosBackgroundCallback);
+    AppLogger.info('✅ HomeWidget background callback registered');
+  } catch (e) {
+    AppLogger.error('⚠️ HomeWidget callback registration failed', e);
   }
 
   // Initialize Firebase Crashlytics
@@ -79,10 +91,11 @@ Future<void> main() async {
 
   AppLogger.info('✅ Firebase Crashlytics initialized');
 
-  // Initialize location service (request permissions)
+  // Initialize location service (request permissions and load state)
   AppLogger.info('🚀 Initializing location service...');
   try {
     await LocationService.requestLocationPermission();
+    await LocationService.init(); // Load saved preferences
     AppLogger.info('✅ Location service initialized');
   } catch (e, stackTrace) {
     AppLogger.error('⚠️ Location service initialization failed', e, stackTrace);
@@ -102,7 +115,12 @@ Future<void> main() async {
 
   String initialRoute;
   if (user != null) {
-    initialRoute = '/home';
+    final role = await FirestoreService().getUserRole(user.uid);
+    if (role == 'admin') {
+      initialRoute = '/admin';
+    } else {
+      initialRoute = '/home';
+    }
   } else {
     initialRoute = '/login';
   }
@@ -124,6 +142,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
         '/home': (context) => const HomeScreen(),
+        '/admin': (context) => const AdminPanelScreen(),
       },
     );
   }

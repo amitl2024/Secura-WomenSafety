@@ -19,6 +19,7 @@ class FirestoreService {
         'createdAt': FieldValue.serverTimestamp(),
         'sosContacts': [], // Initialize empty
         'locationSharing': true, // Default
+        'role': 'student',
       });
     }
   }
@@ -38,6 +39,7 @@ class FirestoreService {
         'createdAt': FieldValue.serverTimestamp(),
         'sosContacts': [],
         'locationSharing': true,
+        'role': 'student',
       });
     }
   }
@@ -58,5 +60,18 @@ class FirestoreService {
         {'name': contactName, 'phone': contactPhone},
       ]),
     });
+  }
+
+  /// Get user role
+  Future<String?> getUserRole(String uid) async {
+    try {
+      final doc = await _db.collection('users').doc(uid).get();
+      if (doc.exists && doc.data()!.containsKey('role')) {
+        return doc.data()!['role'] as String;
+      }
+    } catch (e) {
+      // ignore
+    }
+    return null; // Defaults to null if not found
   }
 }
